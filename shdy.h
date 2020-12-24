@@ -30,7 +30,7 @@ typedef struct {
     GLFWwindow *glfw_win;
 } Window;
 
-void window_create(Window *window, int width, int height, bool fullscreen, bool hidden);
+void window_create(Window *window, const char *title, int width, int height, bool fullscreen, bool hidden);
 void window_destroy(Window *window);
 bool window_is_open(Window *window);
 void window_update(Window *window);

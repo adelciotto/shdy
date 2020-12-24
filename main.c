@@ -21,7 +21,12 @@ int main(int argc, char **argv) {
 
     bool print_mode = cli_opts.print_size != PRINTING_DISABLED;
 
-    window_create(&s_window, cli_opts.win_width, cli_opts.win_height, cli_opts.fullscreen, print_mode);
+    const char *title_fmt = "shdy: %s";
+    int buf_size = snprintf(NULL, 0, title_fmt, cli_opts.frag_shader_path);
+    char title[buf_size + 1];
+    snprintf(title, buf_size + 1, title_fmt, cli_opts.frag_shader_path);
+
+    window_create(&s_window, title, cli_opts.win_width, cli_opts.win_height, cli_opts.fullscreen, print_mode);
 
     ShaderRenderer shader_renderer;
     shader_renderer_create(&shader_renderer, cli_opts.frag_shader_path);

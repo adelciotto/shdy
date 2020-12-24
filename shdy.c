@@ -66,7 +66,7 @@ static void init_gl_debug(void) {
     }
 }
 
-void window_create(Window *window, int width, int height, bool fullscreen, bool hidden) {
+void window_create(Window *window, const char *title, int width, int height, bool fullscreen, bool hidden) {
     glfwSetErrorCallback(glfw_error_callback);
 
     if (!glfwInit()) {
@@ -83,7 +83,7 @@ void window_create(Window *window, int width, int height, bool fullscreen, bool 
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     }
 
-    GLFWwindow *glfw_win = glfwCreateWindow(width, height, "shdy", NULL, NULL);
+    GLFWwindow *glfw_win = glfwCreateWindow(width, height, title, NULL, NULL);
     if (glfw_win == NULL) {
         exit(EXIT_FAILURE);
     }
@@ -238,23 +238,30 @@ static void link_program(unsigned int program, unsigned int vert_shader, unsigne
 static char *read_file(const char *filepath) {
     FILE *fp = fopen(filepath, "rb");
     if (fp == NULL) {
-        ERRORF("failed to fopen() file %s.\n", filepath);
+        ERRORF("Failed to fopen() file %s.\n", filepath);
         exit(EXIT_FAILURE);
     }
 
-    fseek(fp, 0, SEEK_END);
+    if (fseek(fp, 0, SEEK_END) < 0) {
+        ERRORF("Failed to fseek() to end of file %s.\n", filepath);
+        exit(EXIT_FAILURE);
+    }
     long file_size = ftell(fp);
+    if (file_size == -1L) {
+        ERRORF("Failed to ftell() file %s.\n", filepath);
+        exit(EXIT_FAILURE);
+    }
     rewind(fp);
 
     char *buffer = (char *)calloc(file_size + 1, sizeof(char));
     if (buffer == NULL) {
-        ERRORF("failed to malloc() file contents for %s.\n", filepath);
+        ERRORF("Failed to malloc() file contents for %s.\n", filepath);
         exit(EXIT_FAILURE);
     }
 
     size_t result = fread(buffer, 1, file_size, fp);
     if ((long)result != file_size) {
-        ERRORF("failed to fread() file %s.\n", filepath);
+        ERRORF("Failed to fread() file %s.\n", filepath);
         exit(EXIT_FAILURE);
     }
 
