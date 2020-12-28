@@ -1,6 +1,6 @@
-/*
- * Created by anthonydelciotto on 20/12/20.
-*/
+//
+// Created by anthonydelciotto on 20/12/20.
+//
 
 #ifndef SHDY_H
 #define SHDY_H
@@ -8,8 +8,6 @@
 #include <stdio.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-
-#define VERSION "1.0.0"
 
 typedef enum { false, true } bool;
 
@@ -95,15 +93,21 @@ void file_watcher_poll(FileWatcher *file_watcher);
 #define CLI_OPTS_DEFAULT_OUTPUT_IMAGE_PATH "shdy_print.png"
 
 typedef struct {
-    const char *frag_shader_path;  /* required */
-    int win_width;                 /* optional */
-    int win_height;                /* optional */
-    bool fullscreen;               /* optional */
+    const char *frag_shader_path;  // required
+    int win_width;                 // optional
+    int win_height;                // optional
+    bool fullscreen;               // optional
 
-    PrintSize print_size;          /* optional */
-    const char *output_image_path; /* optional */
+    PrintSize print_size;          // optional
+    const char *output_image_path; // optional
 } CliOpts;
 
 void cli_opts_parse(CliOpts *cli_opts, int argc, char **argv);
 
-#endif /*SHDY_H*/
+// At the moment the shader code from "shdy.glsl" is converted to a C string using an online tool:
+// https://tomeko.net/online_tools/cpp_text_escape.php?lang=en
+// and then manually copied to "shdy.c".
+// TODO: Automate this as part of the build.
+extern const char *g_shared_shader_src;
+
+#endif //SHDY_H

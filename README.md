@@ -47,5 +47,35 @@ Here are all the CLI options available.
 
 | Name        | Type  | Description                                         |
 |-------------|-------|-----------------------------------------------------|
-| uResolution | ivec2 | Width and height of the framebuffer in pixels.      |
+| uResolution | vec2 | Width and height of the framebuffer in pixels.      |
 | uTime       | float | The elapsed time since the application was started. |
+
+
+## Shader constants and functions
+
+shdy pre-defines some useful constants and functions that can be used in the target shader.
+
+```glsl
+// Constants that are available:
+const float PI = 3.14159265359;
+const float TWOPI = 6.28318530718;
+
+// Functions that are available:
+
+// Transforms the given fragCoord from pixels into a normalized form for a landscape orientation.
+// The normalized form is in the range Y = [-1.0..+1.0] and X will differ based on the width.
+vec2 shdyNormCoordLandscape(in vec2 fragCoord);
+
+// Transforms the given fragCoord from pixels into a normalized form for a portrait orientation.
+// The normalized form is in the range X = [-1.0..+1.0] and Y will differ based on the height.
+vec2 shdyNormCoordPortrait(in vec2 fragCoord);
+
+// Translates the point to the given position.
+vec2 shdyTranslate2d(in vec2 p, in vec2 t);
+
+// Rotates the point around z-axis (2D rotation) by the given angle.
+vec2 shdyRotate2d(in vec2 p, in float angle);
+
+// Scales the point by the given scale.
+vec2 shdyScale2d(in vec2 p, in vec2 scale);
+```

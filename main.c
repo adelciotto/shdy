@@ -1,6 +1,6 @@
-/*
- * Created by anthonydelciotto on 20/12/20.
-*/
+//
+// Created by anthonydelciotto on 20/12/20.
+//
 
 #include "shdy.h"
 #include <stdlib.h>

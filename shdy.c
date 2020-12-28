@@ -1,6 +1,6 @@
-/*
- * Created by anthonydelciotto on 20/12/20.
-*/
+//
+// Created by anthonydelciotto on 20/12/20.
+//
 
 #include "shdy.h"
 #include <stdlib.h>
@@ -156,16 +156,16 @@ void window_update(Window *window) {
 }
 
 float get_elapsed_time(void) {
-    return glfwGetTime();
+    return (float)glfwGetTime();
 }
 
 static const char* s_vert_shader_src =
-    "#version 330 core\n"
-    "layout (location = 0) in vec2 vPos;\n"
-    "void main()\n"
-    "{\n"
-    "    gl_Position = vec4(vPos, 0.0, 1.0);\n"
-    "}\n";
+        "#version 330\n"
+        "layout (location = 0) in vec2 vPos;\n"
+        "void main()\n"
+        "{\n"
+        "    gl_Position = vec4(vPos, 0.0, 1.0);\n"
+        "}\n";
 
 static void log_shader_error(const char *msg, unsigned int id) {
     int info_log_length = 0;
@@ -192,9 +192,9 @@ static void log_shader_error(const char *msg, unsigned int id) {
     }
 }
 
-static bool compile_shader(GLenum type, const char *src[], unsigned int *out) {
+static bool compile_shader(GLenum type, const char *src[], unsigned int count, unsigned int *out) {
     unsigned int shader = glCreateShader(type);
-    glShaderSource(shader, 1, src, NULL);
+    glShaderSource(shader, count, src, NULL);
     glCompileShader(shader);
 
     *out = shader;
@@ -206,33 +206,6 @@ static bool compile_shader(GLenum type, const char *src[], unsigned int *out) {
     }
 
     return true;
-}
-
-void shader_create(Shader *shader, const char *frag_shader_path) {
-    unsigned int vert_shader;
-    if (!compile_shader(GL_VERTEX_SHADER, (const GLchar **)&s_vert_shader_src, &vert_shader)) {
-        log_shader_error("Failed to compile vertex shader.", vert_shader);
-        exit(EXIT_FAILURE);
-    }
-
-    shader->frag_shader_path = frag_shader_path;
-    shader->vert_shader = vert_shader;
-    shader->compiled = false;
-
-    shader_compile(shader);
-}
-
-static void link_program(unsigned int program, unsigned int vert_shader, unsigned int frag_shader) {
-    glAttachShader(program, vert_shader);
-    glAttachShader(program, frag_shader);
-
-    glLinkProgram(program);
-    int linked = GL_TRUE;
-    glGetProgramiv(program, GL_LINK_STATUS, &linked);
-    if (linked != GL_TRUE) {
-        log_shader_error("Failed to link shader program.", program);
-        exit(EXIT_FAILURE);
-    }
 }
 
 static char *read_file(const char *filepath) {
@@ -269,11 +242,42 @@ static char *read_file(const char *filepath) {
     return buffer;
 }
 
+void shader_create(Shader *shader, const char *frag_shader_path) {
+    unsigned int vert_shader;
+    if (!compile_shader(GL_VERTEX_SHADER, (const GLchar **)&s_vert_shader_src, 1, &vert_shader)) {
+        log_shader_error("Failed to compile vertex shader.", vert_shader);
+        exit(EXIT_FAILURE);
+    }
+
+    shader->frag_shader_path = frag_shader_path;
+    shader->vert_shader = vert_shader;
+    shader->compiled = false;
+
+    shader_compile(shader);
+}
+
+static void link_program(unsigned int program, unsigned int vert_shader, unsigned int frag_shader) {
+    glAttachShader(program, vert_shader);
+    glAttachShader(program, frag_shader);
+
+    glLinkProgram(program);
+    int linked = GL_TRUE;
+    glGetProgramiv(program, GL_LINK_STATUS, &linked);
+    if (linked != GL_TRUE) {
+        log_shader_error("Failed to link shader program.", program);
+        exit(EXIT_FAILURE);
+    }
+}
+
 void shader_compile(Shader *shader) {
     char *frag_shader_src = read_file(shader->frag_shader_path);
 
+    const char *frag_shader_srcs[] = {
+        g_shared_shader_src,
+        frag_shader_src
+    };
     unsigned int frag_shader;
-    if (!compile_shader(GL_FRAGMENT_SHADER, (const GLchar **)&frag_shader_src, &frag_shader)) {
+    if (!compile_shader(GL_FRAGMENT_SHADER, frag_shader_srcs, 2, &frag_shader)) {
         log_shader_error("Failed to compile fragment shader.", frag_shader);
         free(frag_shader_src);
         return;
@@ -301,7 +305,7 @@ void shader_compile(Shader *shader) {
 void shader_set_uniform_resolution(Shader *shader, int width, int height) {
     assert(shader->compiled);
 
-    glUniform2i(shader->uniform_resolution_loc, width, height);
+    glUniform2f(shader->uniform_resolution_loc, (float)width, (float)height);
 }
 
 void shader_set_uniform_elapsed_time(Shader *shader, float elapsed_time) {
@@ -551,7 +555,7 @@ static int str_is_empty(const char *str) {
 }
 
 static void print_help(void) {
-    printf("shdy version %s help\n", VERSION);
+    printf("shdy help\n");
     printf("Live edit a GLSL shader, or save a screenshot to a high resolution image for printing.\n");
     printf("\n");
 
@@ -676,3 +680,45 @@ void cli_opts_parse(CliOpts *cli_opts, int argc, char **argv) {
     cli_opts->print_size = opts.print_size;
     cli_opts->output_image_path = opts.output_image_path;
 }
+
+const char *g_shared_shader_src =
+        "#version 330\n"
+        "\n"
+        "// This file provides generic constants and functions for use in fragment shaders loaded by shdy.\n"
+        "\n"
+        "uniform vec2 uResolution;\n"
+        "uniform float uTime;\n"
+        "\n"
+        "const float PI = 3.14159265359;\n"
+        "const float TWOPI = 6.28318530718;\n"
+        "\n"
+        "// Transforms the given fragCoord from pixels into a normalized form for a landscape orientation.\n"
+        "// The normalized form is in the range Y = [-1.0..+1.0] and X will differ based on the width.\n"
+        "vec2 shdyNormCoordLandscape(in vec2 fragCoord) {\n"
+        "    return 2.0*(fragCoord - 0.5*uResolution) / uResolution.y;\n"
+        "}\n"
+        "\n"
+        "// Transforms the given fragCoord from pixels into a normalized form for a portrait orientation.\n"
+        "// The normalized form is in the range X = [-1.0..+1.0] and Y will differ based on the height.\n"
+        "vec2 shdyNormCoordPortrait(in vec2 fragCoord) {\n"
+        "    return 2.0*(fragCoord - 0.5*uResolution) / uResolution.x;\n"
+        "}\n"
+        "\n"
+        "// 2d transformations.\n"
+        "\n"
+        "vec2 shdyTranslate2d(in vec2 p, in vec2 t) {\n"
+        "    return p - t;\n"
+        "}\n"
+        "\n"
+        "vec2 shdyRotate2d(in vec2 p, in float angle) {\n"
+        "    mat2 rot = mat2(cos(angle), sin(angle),\n"
+        "                    -sin(angle), cos(angle));\n"
+        "    return p*rot;\n"
+        "}\n"
+        "\n"
+        "vec2 shdyScale2d(in vec2 p, in vec2 scale) {\n"
+        "    mat2 scl = mat2(scale.x, 0.0,\n"
+        "                      0.0, scale.y);\n"
+        "    return p*scl;\n"
+        "}\n"
+        "";
