@@ -2,6 +2,11 @@
 // Created by anthonydelciotto on 20/12/20.
 //
 
+// TODO:
+// - Better shader error output.
+// - Better OpenGL debug output.
+// - Draw compile status and frame metrics on screen.
+
 #include "shdy.h"
 #include <cstdlib>
 #include <cassert>
