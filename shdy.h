@@ -5,11 +5,9 @@
 #ifndef SHDY_H
 #define SHDY_H
 
-#include <stdio.h>
+#include <cstdio>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-
-typedef enum { false, true } bool;
 
 #define ERRORF(fmt, ...) \
     fprintf(stderr, "ERROR - %s() in %s, line %i: " fmt, __func__, __FILE__, __LINE__, ## __VA_ARGS__)
@@ -33,18 +31,18 @@ void window_destroy(Window *window);
 bool window_is_open(Window *window);
 void window_update(Window *window);
 
-float get_elapsed_time(void);
+float get_elapsed_time();
 
 typedef struct {
-    const char *frag_shader_path;
-    unsigned int program;
+    const char *user_frag_shader_path;
     unsigned int vert_shader;
+    unsigned int program;
     bool compiled;
     int uniform_resolution_loc;
     int uniform_elapsed_time_loc;
 } Shader;
 
-void shader_create(Shader *shader, const char *frag_shader_path);
+void shader_create(Shader *shader, const char *user_frag_shader_path);
 void shader_compile(Shader *shader);
 void shader_set_uniform_resolution(Shader *shader, int width, int height);
 void shader_set_uniform_elapsed_time(Shader *shader, float elapsed_time);
@@ -103,11 +101,5 @@ typedef struct {
 } CliOpts;
 
 void cli_opts_parse(CliOpts *cli_opts, int argc, char **argv);
-
-// At the moment the shader code from "shdy.glsl" is converted to a C string using an online tool:
-// https://tomeko.net/online_tools/cpp_text_escape.php?lang=en
-// and then manually copied to "shdy.c".
-// TODO: Automate this as part of the build.
-extern const char *g_shared_shader_src;
 
 #endif //SHDY_H

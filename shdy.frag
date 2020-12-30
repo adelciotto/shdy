@@ -1,6 +1,7 @@
+R"(
 #version 330
 
-// This file provides generic constants and functions for use in fragment shaders loaded by shdy.
+out vec4 fragColor;
 
 uniform vec2 uResolution;
 uniform float uTime;
@@ -34,6 +35,7 @@ vec2 shdyRotate2d(in vec2 p, in float angle) {
 
 vec2 shdyScale2d(in vec2 p, in vec2 scale) {
     mat2 scl = mat2(scale.x, 0.0,
-                      0.0, scale.y);
+                    0.0, scale.y);
     return p*scl;
 }
+)"

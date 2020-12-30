@@ -3,32 +3,36 @@
 //
 
 #include "shdy.h"
-#include <stdlib.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cassert>
 #include <getopt.h>
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 #include <sys/inotify.h>
 #include <sys/ioctl.h>
 #include <poll.h>
 #include <unistd.h>
-#include <errno.h>
+#include <cerrno>
 #include <glad/glad.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+
+static const char * s_shared_shader_src =
+#include "shdy.frag"
+;
 
 static void glfw_error_callback(int error, const char *description) {
     ERRORF("GLFW error %d: %s\n", error, description);
 }
 
 static void glfw_window_size_callback(GLFWwindow *win, int w, int h) {
-    Window *window = (Window*)glfwGetWindowUserPointer(win);
+    auto *window = (Window*)glfwGetWindowUserPointer(win);
     window->win_width = w;
     window->win_height = h;
 }
 
 static void glfw_framebuffer_size_callback(GLFWwindow *win, int w, int h) {
-    Window *window = (Window*)glfwGetWindowUserPointer(win);
+    auto *window = (Window*)glfwGetWindowUserPointer(win);
     window->fb_width = w;
     window->fb_height = h;
 }
@@ -47,18 +51,18 @@ static void APIENTRY gl_error_callback(GLenum source,
     ERRORF("OpenGL error: %s\n", message);
 }
 
-static void init_gl_debug(void) {
+static void init_gl_debug() {
     int flags;
     glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
 
     if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(gl_error_callback, NULL);
+        glDebugMessageCallback(gl_error_callback, nullptr);
         glDebugMessageControl(GL_DEBUG_SOURCE_API,
                               GL_DEBUG_TYPE_ERROR,
                               GL_DEBUG_SEVERITY_HIGH,
-                              0, NULL, GL_TRUE);
+                              0, nullptr, GL_TRUE);
 
         INFOF("Initialized OpenGL debug output.\n");
     } else {
@@ -83,18 +87,18 @@ void window_create(Window *window, const char *title, int width, int height, boo
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     }
 
-    GLFWwindow *glfw_win = glfwCreateWindow(width, height, title, NULL, NULL);
-    if (glfw_win == NULL) {
+    GLFWwindow *glfw_win = glfwCreateWindow(width, height, title, nullptr, nullptr);
+    if (glfw_win == nullptr) {
         exit(EXIT_FAILURE);
     }
 
     if (!hidden && fullscreen) {
         GLFWmonitor *monitor = glfwGetPrimaryMonitor();
-        if (monitor == NULL) {
+        if (monitor == nullptr) {
             exit(EXIT_FAILURE);
         }
         const GLFWvidmode *mode = glfwGetVideoMode(monitor);
-        if (mode == NULL) {
+        if (mode == nullptr) {
             exit(EXIT_FAILURE);
         }
         glfwSetWindowMonitor(glfw_win, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
@@ -135,7 +139,7 @@ void window_create(Window *window, const char *title, int width, int height, boo
 }
 
 void window_destroy(Window *window) {
-    if (window->glfw_win != NULL) {
+    if (window->glfw_win != nullptr) {
         glfwDestroyWindow(window->glfw_win);
     }
 
@@ -143,19 +147,19 @@ void window_destroy(Window *window) {
 }
 
 bool window_is_open(Window *window) {
-    assert(window->glfw_win != NULL);
+    assert(window->glfw_win != nullptr);
 
     return !glfwWindowShouldClose(window->glfw_win);
 }
 
 void window_update(Window *window) {
-    assert(window->glfw_win != NULL);
+    assert(window->glfw_win != nullptr);
 
     glfwPollEvents();
     glfwSwapBuffers(window->glfw_win);
 }
 
-float get_elapsed_time(void) {
+float get_elapsed_time() {
     return (float)glfwGetTime();
 }
 
@@ -194,7 +198,7 @@ static void log_shader_error(const char *msg, unsigned int id) {
 
 static bool compile_shader(GLenum type, const char *src[], unsigned int count, unsigned int *out) {
     unsigned int shader = glCreateShader(type);
-    glShaderSource(shader, count, src, NULL);
+    glShaderSource(shader, count, src, nullptr);
     glCompileShader(shader);
 
     *out = shader;
@@ -210,7 +214,7 @@ static bool compile_shader(GLenum type, const char *src[], unsigned int count, u
 
 static char *read_file(const char *filepath) {
     FILE *fp = fopen(filepath, "rb");
-    if (fp == NULL) {
+    if (fp == nullptr) {
         ERRORF("Failed to fopen() file %s.\n", filepath);
         exit(EXIT_FAILURE);
     }
@@ -227,7 +231,7 @@ static char *read_file(const char *filepath) {
     rewind(fp);
 
     char *buffer = (char *)calloc(file_size + 1, sizeof(char));
-    if (buffer == NULL) {
+    if (buffer == nullptr) {
         ERRORF("Failed to malloc() file contents for %s.\n", filepath);
         exit(EXIT_FAILURE);
     }
@@ -242,14 +246,14 @@ static char *read_file(const char *filepath) {
     return buffer;
 }
 
-void shader_create(Shader *shader, const char *frag_shader_path) {
+void shader_create(Shader *shader, const char *user_frag_shader_path) {
     unsigned int vert_shader;
     if (!compile_shader(GL_VERTEX_SHADER, (const GLchar **)&s_vert_shader_src, 1, &vert_shader)) {
         log_shader_error("Failed to compile vertex shader.", vert_shader);
         exit(EXIT_FAILURE);
     }
 
-    shader->frag_shader_path = frag_shader_path;
+    shader->user_frag_shader_path = user_frag_shader_path;
     shader->vert_shader = vert_shader;
     shader->compiled = false;
 
@@ -270,21 +274,20 @@ static void link_program(unsigned int program, unsigned int vert_shader, unsigne
 }
 
 void shader_compile(Shader *shader) {
-    char *frag_shader_src = read_file(shader->frag_shader_path);
-
+    char *user_frag_shader_src = read_file(shader->user_frag_shader_path);
     const char *frag_shader_srcs[] = {
-        g_shared_shader_src,
-        frag_shader_src
+        s_shared_shader_src,
+        user_frag_shader_src
     };
     unsigned int frag_shader;
     if (!compile_shader(GL_FRAGMENT_SHADER, frag_shader_srcs, 2, &frag_shader)) {
         log_shader_error("Failed to compile fragment shader.", frag_shader);
-        free(frag_shader_src);
+        free(user_frag_shader_src);
         return;
     }
-    free(frag_shader_src);
+    free(user_frag_shader_src);
 
-    INFOF("Shader %s compiled successfully.\n", shader->frag_shader_path);
+    INFOF("Shader %s compiled successfully.\n", shader->user_frag_shader_path);
 
     if (shader->compiled) {
         glDeleteProgram(shader->program);
@@ -417,7 +420,7 @@ static void shader_renderer_print_begin(ShaderRenderer *shader_renderer) {
     glGenTextures(1, &tbo);
     glBindTexture(GL_TEXTURE_2D, tbo);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, shader_renderer->width, shader_renderer->height, 0,
-                 GL_RGB, GL_UNSIGNED_BYTE, NULL);
+                 GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tbo, 0);
@@ -437,7 +440,7 @@ static void shader_renderer_print_end(ShaderRenderer *shader_renderer, const cha
     int stride = num_comp * width;
 
     char *buffer = (char *)calloc(num_comp, width * height);
-    if (buffer == NULL) {
+    if (buffer == nullptr) {
         ERRORF("Failed to calloc() for image buffer.\n");
         exit(EXIT_FAILURE);
     }
@@ -474,7 +477,7 @@ void shader_renderer_draw(ShaderRenderer *shader_renderer, float elapsed_time) {
 }
 
 void shader_renderer_draw_to_print(ShaderRenderer *shader_renderer, const char *output_path) {
-    assert(output_path != NULL);
+    assert(output_path != nullptr);
 
     shader_renderer_print_begin(shader_renderer);
     shader_renderer_draw(shader_renderer, 1.0f);
@@ -524,7 +527,7 @@ void file_watcher_poll(FileWatcher *file_watcher) {
 
             int offset = 0;
             while (offset < avail) {
-                struct inotify_event *event = (struct inotify_event*)(buffer + offset);
+                auto *event = (struct inotify_event*)(buffer + offset);
 
                 if (event->mask & IN_CLOSE_WRITE) {
                     file_watcher->modified = true;
@@ -540,21 +543,21 @@ void file_watcher_poll(FileWatcher *file_watcher) {
 }
 
 static struct option long_options[] = {
-        {"shader", required_argument, NULL, 's'},
-        {"width", required_argument, NULL, 'w'},
-        {"height", required_argument, NULL, 'h'},
-        {"fullscreen", no_argument, NULL, 'f'},
-        {"print-size", required_argument, NULL, 'p'},
-        {"output", required_argument, NULL, 'o'},
-        { "help", no_argument, .flag = NULL, 'H'},
-        { 0 }
+        {"shader", required_argument, nullptr, 's'},
+        {"width", required_argument, nullptr, 'w'},
+        {"height", required_argument, nullptr, 'h'},
+        {"fullscreen", no_argument, nullptr, 'f'},
+        {"print-size", required_argument, nullptr, 'p'},
+        {"output", required_argument, nullptr, 'o'},
+        { "help", no_argument, nullptr, 'H'},
+        { nullptr }
 };
 
 static int str_is_empty(const char *str) {
     return strlen(str) == 0;
 }
 
-static void print_help(void) {
+static void print_help() {
     printf("shdy help\n");
     printf("Live edit a GLSL shader, or save a screenshot to a high resolution image for printing.\n");
     printf("\n");
@@ -583,19 +586,19 @@ static int opt_requires_arg(int opt) {
 
 void cli_opts_parse(CliOpts *cli_opts, int argc, char **argv) {
     CliOpts opts = {
-            .frag_shader_path = NULL,
-            .win_width = CLI_OPTS_DEFAULT_WIDTH,
-            .win_height = CLI_OPTS_DEFAULT_HEIGHT,
-            .fullscreen = CLI_OPTS_DEFAULT_FULLSCREEN,
-            .print_size = CLI_OPTS_DEFAULT_PRINT_SIZE,
-            .output_image_path = CLI_OPTS_DEFAULT_OUTPUT_IMAGE_PATH
+            nullptr,
+            CLI_OPTS_DEFAULT_WIDTH,
+            CLI_OPTS_DEFAULT_HEIGHT,
+            CLI_OPTS_DEFAULT_FULLSCREEN,
+            CLI_OPTS_DEFAULT_PRINT_SIZE,
+            CLI_OPTS_DEFAULT_OUTPUT_IMAGE_PATH
     };
 
     opterr = 0;
     bool has_error = false;
 
     while (true) {
-        char ch = getopt_long(argc, argv, "s:w:h:fp:o:H", long_options, NULL);
+        char ch = getopt_long(argc, argv, "s:w:h:fp:o:H", long_options, nullptr);
 
         if (ch == -1) {
             break;
@@ -668,7 +671,7 @@ void cli_opts_parse(CliOpts *cli_opts, int argc, char **argv) {
         }
     }
 
-    if (opts.frag_shader_path == NULL) {
+    if (opts.frag_shader_path == nullptr) {
         ERRORF("Shader filepath option must be provided, e.g --shader [FILEPATH].\n");
         exit(EXIT_FAILURE);
     }
@@ -680,45 +683,3 @@ void cli_opts_parse(CliOpts *cli_opts, int argc, char **argv) {
     cli_opts->print_size = opts.print_size;
     cli_opts->output_image_path = opts.output_image_path;
 }
-
-const char *g_shared_shader_src =
-        "#version 330\n"
-        "\n"
-        "// This file provides generic constants and functions for use in fragment shaders loaded by shdy.\n"
-        "\n"
-        "uniform vec2 uResolution;\n"
-        "uniform float uTime;\n"
-        "\n"
-        "const float PI = 3.14159265359;\n"
-        "const float TWOPI = 6.28318530718;\n"
-        "\n"
-        "// Transforms the given fragCoord from pixels into a normalized form for a landscape orientation.\n"
-        "// The normalized form is in the range Y = [-1.0..+1.0] and X will differ based on the width.\n"
-        "vec2 shdyNormCoordLandscape(in vec2 fragCoord) {\n"
-        "    return 2.0*(fragCoord - 0.5*uResolution) / uResolution.y;\n"
-        "}\n"
-        "\n"
-        "// Transforms the given fragCoord from pixels into a normalized form for a portrait orientation.\n"
-        "// The normalized form is in the range X = [-1.0..+1.0] and Y will differ based on the height.\n"
-        "vec2 shdyNormCoordPortrait(in vec2 fragCoord) {\n"
-        "    return 2.0*(fragCoord - 0.5*uResolution) / uResolution.x;\n"
-        "}\n"
-        "\n"
-        "// 2d transformations.\n"
-        "\n"
-        "vec2 shdyTranslate2d(in vec2 p, in vec2 t) {\n"
-        "    return p - t;\n"
-        "}\n"
-        "\n"
-        "vec2 shdyRotate2d(in vec2 p, in float angle) {\n"
-        "    mat2 rot = mat2(cos(angle), sin(angle),\n"
-        "                    -sin(angle), cos(angle));\n"
-        "    return p*rot;\n"
-        "}\n"
-        "\n"
-        "vec2 shdyScale2d(in vec2 p, in vec2 scale) {\n"
-        "    mat2 scl = mat2(scale.x, 0.0,\n"
-        "                      0.0, scale.y);\n"
-        "    return p*scl;\n"
-        "}\n"
-        "";

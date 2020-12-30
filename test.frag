@@ -1,5 +1,3 @@
-out vec4 fragColor;
-
 void main() {
     vec2 p = shdyNormCoordLandscape(gl_FragCoord.xy);
 

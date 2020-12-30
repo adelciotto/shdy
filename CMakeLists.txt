@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
-project(shdy C)
+project(shdy CXX)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 11)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -pedantic -Wall -Wextra")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DDEBUG)
@@ -15,7 +15,7 @@ set(GLFW_INSTALL OFF CACHE BOOL "GLFW lib only")
 add_subdirectory(vendor/glfw)
 add_subdirectory(vendor/glad)
 
-add_executable(shdy shdy.c shdy.h main.c)
+add_executable(shdy shdy.cpp shdy.h main.cpp)
 
 target_include_directories(shdy PRIVATE vendor/stb/include)
 target_link_libraries(shdy PRIVATE glfw glad)
