@@ -21,6 +21,15 @@ vec2 shdyNormCoordPortrait(in vec2 fragCoord) {
     return 2.0*(fragCoord - 0.5*uResolution) / uResolution.x;
 }
 
+// Returns a pseudorandom float from a given 2d point.
+highp float shdyRand2d(in vec2 p) {
+    const highp float a = 12.9898;
+    const highp float b = 78.233;
+    const highp float ampl = 43758.5453;
+    highp float freq = dot(p, vec2(a, b));
+    return fract(sin(freq)*ampl);
+}
+
 // 2d transformations.
 
 vec2 shdyTranslate2d(in vec2 p, in vec2 t) {
