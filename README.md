@@ -73,9 +73,24 @@ vec2 shdyNormCoordPortrait(in vec2 fragCoord);
 // Translates the point to the given position.
 vec2 shdyTranslate2d(in vec2 p, in vec2 t);
 
+// Returns a 2d rotation matrix.
+mat2 shdyRotMat2d(in float angle);
+
 // Rotates the point around z-axis (2D rotation) by the given angle.
 vec2 shdyRotate2d(in vec2 p, in float angle);
 
+// Returns a 2d scale matrix.
+mat2 shdyScaleMat2d(in vec2 scale);
+
 // Scales the point by the given scale.
 vec2 shdyScale2d(in vec2 p, in vec2 scale);
+
+// Returns a pseudorandom float from a given 2d point.
+highp float shdyRand2d(in vec2 p);
+
+// Returns 2d value noise.
+float shdyNoise2d(in vec2 p);
+
+// Returns 2d fractal value noise.
+float shdyFracNoise2d(in vec2 p, in int octaves);
 ```
