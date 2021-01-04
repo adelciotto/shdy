@@ -43,7 +43,7 @@ $(OBJ_DIR)/%.cpp.o: %.cpp
 
 .PHONY: install
 install:
-	cp $(BUILD_DIR)/release/shdy /usr/local/bin
+	cp $(BUILD_DIR)/release/shdy $(HOME)/Apps/shdy/bin
 
 .PHONY: clean
 clean:
