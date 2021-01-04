@@ -4,7 +4,6 @@
 
 // TODO:
 // - Better shader error output.
-// - Better OpenGL debug output.
 // - Draw compile status and frame metrics on screen.
 
 #include "shdy.h"
@@ -49,11 +48,43 @@ static void APIENTRY gl_error_callback(GLenum source,
                                        GLsizei length,
                                        const char *message,
                                        const void *userParam) {
-    /* Ignore non-significant error/warning codes. */
+    // Ignore non-significant error/warning codes.
     if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
 
-    /* TODO: Print more details */
-    ERRORF("OpenGL error: %s\n", message);
+    ERRORF("OpenGL DEBUG error: %d, %s\n", id, message);
+
+    switch (source) {
+        case GL_DEBUG_SOURCE_API:             ERRORF("Source: API"); break;
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   ERRORF("Source: Window System"); break;
+        case GL_DEBUG_SOURCE_SHADER_COMPILER: ERRORF("Source: Shader Compiler"); break;
+        case GL_DEBUG_SOURCE_THIRD_PARTY:     ERRORF("Source: Third Party"); break;
+        case GL_DEBUG_SOURCE_APPLICATION:     ERRORF("Source: Application"); break;
+        case GL_DEBUG_SOURCE_OTHER:           ERRORF("Source: Other"); break;
+    }
+    printf("\n");
+
+    switch (type)
+    {
+        case GL_DEBUG_TYPE_ERROR:               ERRORF("Type: Error"); break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: ERRORF("Type: Deprecated Behaviour"); break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  ERRORF("Type: Undefined Behaviour"); break;
+        case GL_DEBUG_TYPE_PORTABILITY:         ERRORF("Type: Portability"); break;
+        case GL_DEBUG_TYPE_PERFORMANCE:         ERRORF("Type: Performance"); break;
+        case GL_DEBUG_TYPE_MARKER:              ERRORF("Type: Marker"); break;
+        case GL_DEBUG_TYPE_PUSH_GROUP:          ERRORF("Type: Push Group"); break;
+        case GL_DEBUG_TYPE_POP_GROUP:           ERRORF("Type: Pop Group"); break;
+        case GL_DEBUG_TYPE_OTHER:               ERRORF("Type: Other"); break;
+    }
+    printf("\n");
+
+    switch (severity)
+    {
+        case GL_DEBUG_SEVERITY_HIGH:         ERRORF("Severity: high"); break;
+        case GL_DEBUG_SEVERITY_MEDIUM:       ERRORF("Severity: medium"); break;
+        case GL_DEBUG_SEVERITY_LOW:          ERRORF("Severity: low"); break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION: ERRORF("Severity: notification"); break;
+    }
+    printf("\n");
 }
 
 static void init_gl_debug() {

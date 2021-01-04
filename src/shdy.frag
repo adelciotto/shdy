@@ -88,4 +88,6 @@ float shdyFracNoise2d(in vec2 p, in int octaves) {
 
     return v;
 }
+
+#line 0
 )"
