@@ -1,3 +1,4 @@
 shdy_print.png
-cmake-build-*
 .idea
+.gdb_history
+build
