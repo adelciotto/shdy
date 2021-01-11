@@ -1,16 +1,16 @@
-PROGRAM_NAME 	:= shdy
-SRC_DIR			:= src
-INC_DIR			:= include
-BUILD_DIR		:= build
-DEBUG			?= 0
+PROGRAM_NAME := shdy
+SRC_DIR := src
+INC_DIR := include
+BUILD_DIR := build
+DEBUG ?= 0
 
-CC 				:= g++
-CSTD			:= -std=c++11
-INC_FLAGS		:= -I$(INC_DIR)
-LDFLAGS			:= -ldl $(shell pkg-config --libs gl glfw3)
-CFLAGS 			:= -Wall -Wextra -pedantic $(INC_FLAGS) -MMD -MP
-CFLAGS_DEBUG	:= -g -DDEBUG
-CFLAGS_RELEASE 	:= -O2
+CC := g++
+CSTD := -std=c++11
+INC_FLAGS := -I$(INC_DIR)
+LDFLAGS := -ldl $(shell pkg-config --libs gl glfw3)
+CFLAGS := -Wall -Wextra -pedantic $(INC_FLAGS) -MMD -MP
+CFLAGS_DEBUG := -g -DDEBUG
+CFLAGS_RELEASE := -O2
 
 ifeq ($(DEBUG), 1)
 	CFLAGS += $(CFLAGS_DEBUG)
@@ -20,11 +20,11 @@ else
 	TARGET_DIR := $(BUILD_DIR)/release
 endif
 
-TARGET 			:= $(TARGET_DIR)/$(PROGRAM_NAME)
-SRCS			:= $(shell find $(SRC_DIR) -name *.c -or -name *.cpp)
-OBJ_DIR			:= $(TARGET_DIR)/obj
-OBJS			:= $(SRCS:%=$(OBJ_DIR)/%.o)
-DEPS			:= $(OBJS:.o=.d)
+TARGET := $(TARGET_DIR)/$(PROGRAM_NAME)
+SRCS := $(shell find $(SRC_DIR) -name *.c -or -name *.cpp)
+OBJ_DIR := $(TARGET_DIR)/obj
+OBJS := $(SRCS:%=$(OBJ_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
 $(info $(TARGET))
 
 .PHONY: all
